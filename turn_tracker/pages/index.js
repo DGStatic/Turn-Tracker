@@ -118,6 +118,7 @@ class Scenario {
     }
 
 
+
     // Map the ith row onto the page
     function generateRows(i) { 
 
@@ -136,15 +137,84 @@ class Scenario {
         setRows(tempRows);
       }
 
+      function handleMoveRowUp() {
+        if (i != 0) {
+          var tempRows = []
+          for (var i2 = 0; i2 < rows.length; i2++) {
+            tempRows.push([]);
+            if (i2 == i) { // reached target index
+              const len1 = rows[i2].length;
+              const len2 = rows[i2-1].length;
+              if (len1 > len2) { // smaller row above
+                for (var j = 0; j < len1; j++) {
+                  if (j > len2-1) { // reached limit of row above the target
+                    var tempCell = {'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols}
+                    tempRows[i2-1].push({'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols})
+                  } else {
+                    tempRows[i2].push({'title' : "Title", 'text' : "", "cols" : undefined});
+                    var tempCell = {'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols}
+                    tempRows[i2][j] = {'title' : rows[i2-1][j].title, 'text' : rows[i2-1][j].text, 'cols' : rows[i2-1][j].cols}
+                    tempRows[i2-1][j] = {'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols}
+                  }
+                }
+              } else if (len1 == len2) { // same row length above
+                for (var j = 0; j < len1; j++) {
+                  tempRows[i2].push({'title' : "Title", 'text' : "", "cols" : undefined});
+                  var tempCell = {'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols}
+                  tempRows[i2][j] = {'title' : rows[i2-1][j].title, 'text' : rows[i2-1][j].text, 'cols' : rows[i2-1][j].cols}
+                  tempRows[i2-1][j] = {'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols}
+                }
+              } else { // longer row above
+                for (var j = 0; j < len2; j++) {
+                  if (j > len1-1) { // reached limit of target
+                    tempRows[i2].push( {'title' : rows[i2-1][j].title, 'text' : rows[i2-1][j].text, 'cols' : rows[i2-1][j].cols} )
+                  } else {
+                    var tempCell = {'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols}
+                    tempRows[i2].push ({'title' : rows[i2-1][j].title, 'text' : rows[i2-1][j].text, 'cols' : rows[i2-1][j].cols})
+                    tempRows[i2-1][j] = {'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols}
+                  }
+                }
+                for (var k = 0; k < len2-len1; k++) { // remove extra space on row above
+                  tempRows[i2-1].pop();
+                } 
+              }
+              
+            } else {
+              for(var j = 0; j < rows[i2].length; j++) {
+                tempRows[i2].push({'title' : "", 'text' : "", "cols" : undefined});
+                tempRows[i2][j].title = rows[i2][j].title;
+                tempRows[i2][j].text = rows[i2][j].text;
+                tempRows[i2][j].cols = rows[i2][j].cols;
+              }
+            }
+            
+          }
+          setRows(tempRows)
+        } else {
+          setRows(rows)
+        }
+      }
+
+      function handleMoveRowDown() { // TODO: same as moving up, but we have to build the target using the future row, then build the future row
+
+      }
+
+      function handleRemoveRow() { // TODO: slice rows in two, shift second half, and concat
+
+      }
+
       return (
         <div className={styles.row} key={"row"+String(i)} id={"row"+String(i)}>
+          <div className={styles.cell} key={"row"+String(i)+"-row-buttons"} id={"row"+String(i)+"-row-buttons"}>
+            <button className={styles.new_btn} key={"row"+String(i)+"-row-up-btn"} id={"row"+String(i)+"-row-up-btn"} onClick={handleMoveRowUp}>^</button>
+            <button className={styles.new_btn} key={"row"+String(i)+"-row-down-btn"} id={"row"+String(i)+"-row-down-btn"} onClick={handleMoveRowDown}>v</button>
+          </div>
           {
             rows[i].map( (cell, j)=>(
-              console.log("generating cell..."),
               generateCell(i, j)
             ))
           }
-          <button className={styles.new_btn} key={i} onClick={handleNewCell} key={"row"+String(i)+"-new-cell-btn"} id={"row"+String(i)+"-new-cell-btn"}>+</button>
+          <button className={styles.new_btn} onClick={handleNewCell} key={"row"+String(i)+"-new-cell-btn"} id={"row"+String(i)+"-new-cell-btn"}>+</button>
         </div>
       )
     }
@@ -164,7 +234,10 @@ class Scenario {
         for (var i2 = 0; i2 < rows.length; i2++) {
           tempRows.push([]);
           for(var j2 = 0; j2 < rows[i2].length; j2++) {
-            tempRows[i2].push(rows[i2][j2]);
+            tempRows[i2].push({'title' : "", 'text' : "", "cols" : undefined});
+            tempRows[i2][j2].title = rows[i2][j2].title;
+            tempRows[i2][j2].text = rows[i2][j2].text;
+            tempRows[i2][j2].cols = rows[i2][j2].cols;
           }
         }
 
@@ -188,9 +261,9 @@ class Scenario {
 
       return (
        <div className={styles.cell} key={"row"+String(i)+"-cell"+String(j)} id={"row"+String(i)+"-cell"+String(j)}>
-        <textarea className={styles.text} key={"row"+String(i)+"-cell"+String(j)+"-title"} id={"row"+String(i)+"-cell"+String(j)+"-title"} onChange={handleChange} type="text" defaultValue={rows[i][j].title} placeholder="Title" cols={rows[i][j].cols}/>
-        <textarea className={styles.text} key={"row"+String(i)+"-cell"+String(j)+"-text"} id={"row"+String(i)+"-cell"+String(j)+"-text"} onChange={handleChange} type="text" defaultValue={rows[i][j].text} cols={rows[i][j].cols}/>
-       </div>,
+        <textarea className={styles.text} key={"row"+String(i)+"-cell"+String(j)+"-title"} id={"row"+String(i)+"-cell"+String(j)+"-title"} onChange={handleChange} type="text"  placeholder="Title" cols={rows[i][j].cols} value={rows[i][j].title}></textarea>
+        <textarea className={styles.text} key={"row"+String(i)+"-cell"+String(j)+"-text"} id={"row"+String(i)+"-cell"+String(j)+"-text"} onChange={handleChange} type="text"  cols={rows[i][j].cols} value={rows[i][j].text}></textarea>
+       </div>
        
       )
     }
@@ -220,7 +293,7 @@ function generate_scenario() {
 // Generate a scenario for a general D&D 5e game
 function generate_5e_scenario() {
 
-  var initCell = {'title' : "Iniative", 'text' : "", 'cols' : 5}
+  var initCell = {'title' : "Initiative", 'text' : "", 'cols' : 5}
   var nameCell = {'title' : "Name", 'text' : "", 'cols' : 5}
   var acCell = {'title' : "AC", 'text' : "", 'cols' : 5}
   var hpCell = {'title' : "HP", 'text' : "", 'cols' : 5}
