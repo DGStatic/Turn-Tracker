@@ -41,7 +41,7 @@ function useWindowSize() {
 
 class Scenario {
   
-  constructor(rows = [[{'title': 'Title', 'text': '', 'cols': 5}]]) {
+  constructor(rows = [[{'title': 'Title', 'text': '', 'cols': 5, 'display': 'none'}]]) {
     this.rows = rows;
     
     this.totCols = 0;
@@ -65,6 +65,7 @@ class Scenario {
     // Pixels to Points conversion (16 pixels to 12 points). TODO: Automatically set ptp.
     const ptp = 21; 
 
+
     // Gets total columns of a single row
     function getTotalCols(row) { 
       var total = 0;
@@ -76,26 +77,24 @@ class Scenario {
 
     // Duplicates a row and adds it beneath
     function handleDupRow() { 
-
+      if (rows.length == 0) {return;}
       // Create a low level copy of rows to avoid reference
       var tempRows = []
       for (var i = 0; i < rows.length; i++) {
         tempRows.push([]);
         for(var j = 0; j < rows[i].length; j++) {
-          tempRows[i].push({'title' : "", 'text' : "", "cols" : undefined});
-          tempRows[i][j].title = rows[i][j].title;
-          tempRows[i][j].text = rows[i][j].text;
-          tempRows[i][j].cols = rows[i][j].cols;
+          tempRows[i].push({'title' : rows[i][j].title, 'text' : rows[i][j].text, 'cols' : rows[i][j].cols, 'display' : rows[i][j].display})
         }
       }
 
       // Create a low level copy of a row from the other copy to again avoid any references. Fuck this language.
       var tempRow = []
       for (var i = 0; i < tempRows[tempRows.length-1].length; i++) {
-        tempRow.push({'title' : "", 'text' : "", "cols" : undefined});
+        tempRow.push({'title' : "", 'text' : "", "cols" : undefined, 'display' : 'none'});
         tempRow[i].title = tempRows[tempRows.length-1][i].title;
         tempRow[i].text = tempRows[tempRows.length-1][i].text;
         tempRow[i].cols = tempRows[tempRows.length-1][i].cols;
+        tempRow[i].display = tempRows[tempRows.length-1][i].display;
       }
 
       tempRows.push(tempRow);
@@ -109,11 +108,11 @@ class Scenario {
       for (var i = 0; i < rows.length; i++) {
         tempRows.push([]);
         for(var j = 0; j < rows[i].length; j++) {
-          tempRows[i].push(rows[i][j]);
+          tempRows[i].push({'title' : rows[i][j].title, 'text' : rows[i][j].text, 'cols' : rows[i][j].cols, 'display' : rows[i][j].display})
         }
       }
 
-      tempRows = tempRows.concat([[{'title': 'Title', 'text': '', 'cols': 5}]])
+      tempRows = tempRows.concat([[{'title': 'Title', 'text': '', 'cols': 5, 'display' : 'none'}]])
       setRows(tempRows)
     }
 
@@ -129,62 +128,67 @@ class Scenario {
         for (var i2 = 0; i2 < rows.length; i2++) {
           tempRows.push([]);
           for(var j = 0; j < rows[i2].length; j++) {
-            tempRows[i2].push(rows[i2][j]);
+            tempRows[i2].push({'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display': rows[i2][j].display})
           }
         }
         
-        tempRows[i].push({'title': 'Title', 'text': '', 'cols': 5})
+        tempRows[i].push({'title': 'Title', 'text': '', 'cols': 5, 'display' : "none"})
         setRows(tempRows);
       }
 
+      // reconstructs rows as if the target and the row above are swapped
       function handleMoveRowUp() {
         if (i != 0) {
           var tempRows = []
           for (var i2 = 0; i2 < rows.length; i2++) {
             tempRows.push([]);
-            if (i2 == i) { // reached target index
+            // reached target index
+            if (i2 == i) { 
               const len1 = rows[i2].length;
               const len2 = rows[i2-1].length;
-              if (len1 > len2) { // smaller row above
+              // smaller row above
+              if (len1 > len2) { 
                 for (var j = 0; j < len1; j++) {
-                  if (j > len2-1) { // reached limit of row above the target
-                    var tempCell = {'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols}
-                    tempRows[i2-1].push({'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols})
+                  // reached limit of row above the target
+                  if (j > len2-1) { 
+                    var tempCell = {'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display' : rows[i2][j].display}
+                    tempRows[i2-1].push({'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols, 'display' : tempCell.display})
                   } else {
-                    tempRows[i2].push({'title' : "Title", 'text' : "", "cols" : undefined});
-                    var tempCell = {'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols}
-                    tempRows[i2][j] = {'title' : rows[i2-1][j].title, 'text' : rows[i2-1][j].text, 'cols' : rows[i2-1][j].cols}
-                    tempRows[i2-1][j] = {'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols}
+                    tempRows[i2].push({'title' : "Title", 'text' : "", "cols" : undefined, 'display' : "none"});
+                    var tempCell = {'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display' : rows[i2][j].display}
+                    tempRows[i2][j] = {'title' : rows[i2-1][j].title, 'text' : rows[i2-1][j].text, 'cols' : rows[i2-1][j].cols, 'display' : rows[i2-1][j].display}
+                    tempRows[i2-1][j] = {'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols, 'display' : tempCell.display}
                   }
                 }
-              } else if (len1 == len2) { // same row length above
+              // same row length above
+              } else if (len1 == len2) { 
                 for (var j = 0; j < len1; j++) {
-                  tempRows[i2].push({'title' : "Title", 'text' : "", "cols" : undefined});
-                  var tempCell = {'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols}
-                  tempRows[i2][j] = {'title' : rows[i2-1][j].title, 'text' : rows[i2-1][j].text, 'cols' : rows[i2-1][j].cols}
-                  tempRows[i2-1][j] = {'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols}
+                  tempRows[i2].push({'title' : "Title", 'text' : "", "cols" : undefined, 'display' : "none"});
+                  var tempCell = {'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display' : rows[i2][j].display}
+                  tempRows[i2][j] = {'title' : rows[i2-1][j].title, 'text' : rows[i2-1][j].text, 'cols' : rows[i2-1][j].cols, 'display' : rows[i2-1][j].display}
+                  tempRows[i2-1][j] = {'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols, 'display' : tempCell.display}
                 }
-              } else { // longer row above
+              // longer row above
+              } else { 
                 for (var j = 0; j < len2; j++) {
-                  if (j > len1-1) { // reached limit of target
-                    tempRows[i2].push( {'title' : rows[i2-1][j].title, 'text' : rows[i2-1][j].text, 'cols' : rows[i2-1][j].cols} )
+                  // reached limit of target
+                  if (j > len1-1) { 
+                    tempRows[i2].push( {'title' : rows[i2-1][j].title, 'text' : rows[i2-1][j].text, 'cols' : rows[i2-1][j].cols, 'display' : rows[i2-1][j].display })
                   } else {
-                    var tempCell = {'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols}
-                    tempRows[i2].push ({'title' : rows[i2-1][j].title, 'text' : rows[i2-1][j].text, 'cols' : rows[i2-1][j].cols})
-                    tempRows[i2-1][j] = {'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols}
+                    var tempCell = {'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display' : rows[i2][j].display}
+                    tempRows[i2].push ({'title' : rows[i2-1][j].title, 'text' : rows[i2-1][j].text, 'cols' : rows[i2-1][j].cols, 'display' : rows[i2-1][j].display})
+                    tempRows[i2-1][j] = {'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols, 'display' : tempCell.display}
                   }
                 }
-                for (var k = 0; k < len2-len1; k++) { // remove extra space on row above
+                // remove extra space on row above
+                for (var k = 0; k < len2-len1; k++) { 
                   tempRows[i2-1].pop();
                 } 
               }
               
             } else {
               for(var j = 0; j < rows[i2].length; j++) {
-                tempRows[i2].push({'title' : "", 'text' : "", "cols" : undefined});
-                tempRows[i2][j].title = rows[i2][j].title;
-                tempRows[i2][j].text = rows[i2][j].text;
-                tempRows[i2][j].cols = rows[i2][j].cols;
+                tempRows[i2].push({'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display' : rows[i2][j].display})
               }
             }
             
@@ -195,26 +199,85 @@ class Scenario {
         }
       }
 
-      function handleMoveRowDown() { // TODO: same as moving up, but we have to build the target using the future row, then build the future row
+      // reconstructs rows as if the target and the row below are swapped
+      function handleMoveRowDown() {
+        if (i != rows.length-1) {
+          var tempRows = []
+          for (var i2 = 0; i2 < rows.length; i2++) {
+            tempRows.push([])
+            if (i2 == i) {
+              tempRows.push([])
+              const len1 = rows[i2].length;
+              const len2 = rows[i2+1].length;
+              if (len1 > len2) {
+                // smaller row below
+                for (var j = 0; j < len1; j++) {
+                  // reached limit of row below
+                  if (j > len2-1) { 
+                    tempRows[i2+1].push( {'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display' : rows[i2][j].display} )
+                  } else {
+                    tempRows[i2+1].push ({'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display' : rows[i2][j].display})
+                    tempRows[i2].push ({'title' : rows[i2+1][j].title, 'text' : rows[i2+1][j].text, 'cols' : rows[i2+1][j].cols, 'display' : rows[i2+1][j].display})
+                  }
+                } 
+              } else if (len1 == len2) {
+                // same length below
+                for (var j = 0; j < len1; j++) {
+                  tempRows[i2+1].push ({'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display' : rows[i2][j].display})
+                  tempRows[i2].push ({'title' : rows[i2+1][j].title, 'text' : rows[i2+1][j].text, 'cols' : rows[i2+1][j].cols, 'display' : rows[i2+1][j].display})
+                }
+              } else {
+                // longer row below
+                for (var j = 0; j < len2; j++) {
+                  // reached limit of target
+                  if (j > len1-1) {
+                    tempRows[i2].push( {'title' : rows[i2+1][j].title, 'text' : rows[i2+1][j].text, 'cols' : rows[i2+1][j].cols, 'display' : rows[i2+1][j].display} )
+                  } else {
+                    tempRows[i2+1].push ({'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display' : rows[i2][j].display})
+                    tempRows[i2].push ({'title' : rows[i2+1][j].title, 'text' : rows[i2+1][j].text, 'cols' : rows[i2+1][j].cols, 'display' : rows[i2+1][j].display})
+                  }
+                }
+              }
+              i2 += 1;
+            } else {
+              for(var j = 0; j < rows[i2].length; j++) {
+                tempRows[i2].push({'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display' : rows[i2][j].display})
+              }
+            }
+          }
+          setRows(tempRows)
+        } else {
+          setRows(rows)
+        }
 
       }
 
-      function handleRemoveRow() { // TODO: slice rows in two, shift second half, and concat
-
+      // reconstructs rows as if the target row never existed
+      function handleRemoveRow() { 
+        var tempRows = []
+        for (var i2 = 0; i2 < rows.length; i2++) {
+          if (i2 == i) { continue; }
+          tempRows.push([])
+          for (var j = 0; j < rows[i2].length; j++) {
+            tempRows[i2].push({'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display' : rows[i2][j].display})
+          }
+        }
+        setRows(tempRows)
       }
 
       return (
         <div className={styles.row} key={"row"+String(i)} id={"row"+String(i)}>
           <div className={styles.cell} key={"row"+String(i)+"-row-buttons"} id={"row"+String(i)+"-row-buttons"}>
-            <button className={styles.new_btn} key={"row"+String(i)+"-row-up-btn"} id={"row"+String(i)+"-row-up-btn"} onClick={handleMoveRowUp}>^</button>
-            <button className={styles.new_btn} key={"row"+String(i)+"-row-down-btn"} id={"row"+String(i)+"-row-down-btn"} onClick={handleMoveRowDown}>v</button>
+            <button className={styles.row_btn} key={"row"+String(i)+"-row-up-btn"} id={"row"+String(i)+"-row-up-btn"} onClick={handleMoveRowUp}>^</button>
+            <button className={styles.row_btn} key={"row"+String(i)+"-row-delete-btn"} id={"row"+String(i)+"-row-delete-btn"} onClick={handleRemoveRow}>x</button>
+            <button className={styles.row_btn} key={"row"+String(i)+"-row-down-btn"} id={"row"+String(i)+"-row-down-btn"} onClick={handleMoveRowDown}>v</button>
           </div>
           {
             rows[i].map( (cell, j)=>(
               generateCell(i, j)
             ))
           }
-          <button className={styles.new_btn} onClick={handleNewCell} key={"row"+String(i)+"-new-cell-btn"} id={"row"+String(i)+"-new-cell-btn"}>+</button>
+          <button className={styles.row_btn} onClick={handleNewCell} key={"row"+String(i)+"-new-cell-btn"} id={"row"+String(i)+"-new-cell-btn"}>+</button>
         </div>
       )
     }
@@ -234,10 +297,12 @@ class Scenario {
         for (var i2 = 0; i2 < rows.length; i2++) {
           tempRows.push([]);
           for(var j2 = 0; j2 < rows[i2].length; j2++) {
-            tempRows[i2].push({'title' : "", 'text' : "", "cols" : undefined});
-            tempRows[i2][j2].title = rows[i2][j2].title;
-            tempRows[i2][j2].text = rows[i2][j2].text;
-            tempRows[i2][j2].cols = rows[i2][j2].cols;
+            if (i2 == i && j2 == j) {
+              tempRows[i2].push({'title' : rows[i2][j2].title, 'text' : rows[i2][j2].text, 'cols' : rows[i2][j2].cols, 'display' : "flex"})
+            } else {
+              tempRows[i2].push({'title' : rows[i2][j2].title, 'text' : rows[i2][j2].text, 'cols' : rows[i2][j2].cols, 'display' : rows[i2][j2].display})
+            }
+            
           }
         }
 
@@ -259,10 +324,103 @@ class Scenario {
         
       }
 
+      // View the cell buttons when the cell is being edited
+      function handleCellMouseOver() {
+        var tempRows = []
+        for (var i2 = 0; i2 < rows.length; i2++) {
+          tempRows.push([])
+          for (var j2 = 0; j2 < rows[i2].length; j2++) {
+            if (i2 == i && j2 == j) {
+              tempRows[i2].push({'title' : rows[i2][j2].title, 'text' : rows[i2][j2].text, 'cols' : rows[i2][j2].cols, 'display' : "flex"})
+            } else {
+              tempRows[i2].push({'title' : rows[i2][j2].title, 'text' : rows[i2][j2].text, 'cols' : rows[i2][j2].cols, 'display' : rows[i2][j2].display})
+            }
+          }
+        }
+        setRows(tempRows)
+      }
+
+      // Hide the cell button when the cell is not being edited
+      function handleCellMouseLeave() {
+        var tempRows = []
+        for (var i2 = 0; i2 < rows.length; i2++) {
+          tempRows.push([])
+          for (var j2 = 0; j2 < rows[i2].length; j2++) {
+            if (i2 == i && j2 == j) {
+              tempRows[i2].push({'title' : rows[i2][j2].title, 'text' : rows[i2][j2].text, 'cols' : rows[i2][j2].cols, 'display' : "none"})
+            } else {
+              tempRows[i2].push({'title' : rows[i2][j2].title, 'text' : rows[i2][j2].text, 'cols' : rows[i2][j2].cols, 'display' : rows[i2][j2].display})
+            }
+          }
+        }
+        setRows(tempRows)
+      }
+
+      // reconstructs rows as if the targeted cell was swapped with the one before it
+      function handleMoveCellLeft() {
+        if (j != 0) {
+          var tempRows = []
+          for (var i2 = 0; i2 < rows.length; i2++) {
+            tempRows.push([])
+            for (var j2 = 0; j2 < rows[i2].length; j2++) {
+              if (i2 == i && j2 == j) {
+                var tempCell = {'title' : rows[i2][j2-1].title, 'text' : rows[i2][j2-1].text, 'cols' : rows[i2][j2-1].cols, 'display' : rows[i2][j2-1].display}
+                tempRows[i2][j2-1] = {'title' : rows[i2][j2].title, 'text' : rows[i2][j2].text, 'cols' : rows[i2][j2].cols, 'display' : rows[i2][j2].display}
+                tempRows[i2].push({'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols, 'display' : tempCell.display})
+              } else {
+                tempRows[i2].push({'title' : rows[i2][j2].title, 'text' : rows[i2][j2].text, 'cols' : rows[i2][j2].cols, 'display' : rows[i2][j2].display})
+              }
+            }
+          }
+          setRows(tempRows)
+        } else {
+          setRows(rows)
+        }
+      }
+
+      // reconstructs rows as if the targeted cell was swapped with the one after it
+      function handleMoveCellRight() {
+        if (j != rows[i].length-1) {
+          var tempRows = []
+          for (var i2 = 0; i2 < rows.length; i2++) {
+            tempRows.push([])
+            for (var j2 = 0; j2 < rows[i2].length; j2++) {
+              if (i2 == i && j2 == j+1) {
+                var tempCell = {'title' : rows[i2][j2-1].title, 'text' : rows[i2][j2-1].text, 'cols' : rows[i2][j2-1].cols, 'display' : rows[i2][j2-1].display}
+                tempRows[i2][j2-1] = {'title' : rows[i2][j2].title, 'text' : rows[i2][j2].text, 'cols' : rows[i2][j2].cols, 'display' : rows[i2][j2].display}
+                tempRows[i2].push({'title' : tempCell.title, 'text' : tempCell.text, 'cols' : tempCell.cols, 'display' : tempCell.display})
+              } else {
+                tempRows[i2].push({'title' : rows[i2][j2].title, 'text' : rows[i2][j2].text, 'cols' : rows[i2][j2].cols, 'display' : rows[i2][j2].display})
+              }
+            }
+          }
+          setRows(tempRows)
+        } else {
+          setRows(rows)
+        }
+      }
+
+      function handleRemoveCell() {
+        var tempRows = []
+        for (var i2 = 0; i2 < rows.length; i2++) {
+          tempRows.push([])
+          for (var j2 = 0; j2 < rows[i2].length; j2++) {
+            if (i2 == i && j2 == j ) { continue; }
+            tempRows[i2].push({'title' : rows[i2][j2].title, 'text' : rows[i2][j2].text, 'cols' : rows[i2][j2].cols, 'display' : rows[i2][j2].display})
+          }
+        }
+        setRows(tempRows)
+      }
+
       return (
-       <div className={styles.cell} key={"row"+String(i)+"-cell"+String(j)} id={"row"+String(i)+"-cell"+String(j)}>
+       <div className={styles.cell} key={"row"+String(i)+"-cell"+String(j)} id={"row"+String(i)+"-cell"+String(j)} onFocus={handleCellMouseOver} onMouseLeave={handleCellMouseLeave}>
         <textarea className={styles.text} key={"row"+String(i)+"-cell"+String(j)+"-title"} id={"row"+String(i)+"-cell"+String(j)+"-title"} onChange={handleChange} type="text"  placeholder="Title" cols={rows[i][j].cols} value={rows[i][j].title}></textarea>
         <textarea className={styles.text} key={"row"+String(i)+"-cell"+String(j)+"-text"} id={"row"+String(i)+"-cell"+String(j)+"-text"} onChange={handleChange} type="text"  cols={rows[i][j].cols} value={rows[i][j].text}></textarea>
+        <div className={styles.btn_container} key={"row"+String(i)+"-cell"+String(j)+"-btn-container"} id={"row"+String(i)+"-cell"+String(j)+"-btn-container"} style = {{ display : rows[i][j].display, flexDirection: "horizontal", justifyContent: "center" }} onMouseOver={handleCellMouseOver} onMouseOut={handleCellMouseLeave}>
+          <button className={styles.cell_btn} key={"row"+String(i)+"-cell"+String(j)+"-cell-left-btn"} id={"row"+String(i)+"-cell"+String(j)+"-cell-left-btn"} onClick={handleMoveCellLeft}>{"<"}</button>
+          <button className={styles.cell_btn} key={"row"+String(i)+"-cell"+String(j)+"-cell-delete-btn"} id={"row"+String(i)+"-cell"+String(j)+"-cell-delete-btn"} onClick={handleRemoveCell}>{"x"}</button>
+          <button className={styles.cell_btn} key={"row"+String(i)+"-cell"+String(j)+"-cell-right-btn"} id={"row"+String(i)+"-cell"+String(j)+"-cell-right-btn"} onClick={handleMoveCellRight}>{">"}</button>
+        </div>
        </div>
        
       )
@@ -275,8 +433,8 @@ class Scenario {
             generateRows(i)
           ))
         }
-        <button className={styles.new_btn} id="new-row-btn" key="new-row-btn" onClick={handleNewRow}>+</button>
-        <button className={styles.new_btn} id="dup-row-btn" key="dup-row-btn" onClick={handleDupRow}>v</button>
+        <button className={styles.row_btn} id="new-row-btn" key="new-row-btn" onClick={handleNewRow}>+</button>
+        <button className={styles.row_btn} id="dup-row-btn" key="dup-row-btn" onClick={handleDupRow}>v</button>
       </div>
     )
   }
@@ -293,11 +451,11 @@ function generate_scenario() {
 // Generate a scenario for a general D&D 5e game
 function generate_5e_scenario() {
 
-  var initCell = {'title' : "Initiative", 'text' : "", 'cols' : 5}
-  var nameCell = {'title' : "Name", 'text' : "", 'cols' : 5}
-  var acCell = {'title' : "AC", 'text' : "", 'cols' : 5}
-  var hpCell = {'title' : "HP", 'text' : "", 'cols' : 5}
-  var notesCell = {'title' : "Notes", 'text' : "", 'cols' : 5}
+  var initCell = {'title' : "Initiative", 'text' : "", 'cols' : 5, 'display' : 'none'}
+  var nameCell = {'title' : "Name", 'text' : "", 'cols' : 5, 'display' : 'none'}
+  var acCell = {'title' : "AC", 'text' : "", 'cols' : 5, 'display' : 'none'}
+  var hpCell = {'title' : "HP", 'text' : "", 'cols' : 5, 'display' : 'none'}
+  var notesCell = {'title' : "Notes", 'text' : "", 'cols' : 5, 'display' : 'none'}
   var row = [initCell, nameCell, hpCell, acCell, notesCell]
   var scn = new Scenario([row])
 

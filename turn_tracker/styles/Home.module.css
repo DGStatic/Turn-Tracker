@@ -30,6 +30,19 @@
   min-height: 100vh;
 }
 
-.new_btn {
+.row_btn {
   min-width: 4em;
+  min-height: 2em;
 }
+
+.cell_btn {
+  min-width: 2em;
+  min-height: 1em;
+}
+
+.btn_container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+}
+
