@@ -255,12 +255,14 @@ class Scenario {
       // reconstructs rows as if the target row never existed
       function handleRemoveRow() { 
         var tempRows = []
+        var index = 0;
         for (var i2 = 0; i2 < rows.length; i2++) {
           if (i2 == i) { continue; }
           tempRows.push([])
           for (var j = 0; j < rows[i2].length; j++) {
-            tempRows[i2].push({'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display' : rows[i2][j].display})
+            tempRows[index].push({'title' : rows[i2][j].title, 'text' : rows[i2][j].text, 'cols' : rows[i2][j].cols, 'display' : rows[i2][j].display})
           }
+          index += 1;
         }
         setRows(tempRows)
       }
@@ -400,6 +402,7 @@ class Scenario {
         }
       }
 
+      // reconstructs rows as if the targeted cell never existed
       function handleRemoveCell() {
         var tempRows = []
         for (var i2 = 0; i2 < rows.length; i2++) {
