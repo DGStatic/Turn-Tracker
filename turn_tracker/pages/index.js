@@ -5,6 +5,7 @@ import styles from '@/styles/Home.module.css'
 
 import { v4 as uuidv4 } from 'uuid';
 import { useState, useEffect, setState } from 'react';
+import { STRING_LITERAL_DROP_BUNDLE } from 'next/dist/shared/lib/constants';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -60,10 +61,19 @@ class Scenario {
     
     // State of rows and cell objects
     const [rows, setRows] = useState(this.rows) 
+    // State of whether the scenario is being run or not
+    const [running, setRunning] = useState(false);
+    // State of the currently active row
+    const [activeRow, setActiveRow] = useState(0)
+    // State of the current round of the turn-based scenario
+    const [round, setRound] = useState(1);
     // State of window size
     const size = useWindowSize(); 
+
     // Pixels to Points conversion (16 pixels to 12 points). TODO: Automatically set ptp.
     const ptp = 21; 
+    // Max width of a cell in character widths
+    const MAX_COLS = 30;
 
 
     // Gets total columns of a single row
@@ -73,6 +83,28 @@ class Scenario {
         total += rows[row][i].cols
       }
       return total;
+    }
+
+    function handleStart() {
+      setRunning(!running);
+      setActiveRow(0);
+      setRound(1);
+    }
+
+    function handleNext() {
+      if (running) {
+        if (activeRow == rows.length-1) {
+          setRound(round + 1);
+          setActiveRow(0);
+        }
+        else {
+          setActiveRow(activeRow + 1);
+        }
+      }
+    }
+
+    function generateStartButtonText() {
+      return running ? "Reset" : "Start";
     }
 
     // Duplicates a row and adds it beneath
@@ -120,6 +152,7 @@ class Scenario {
 
     // Map the ith row onto the page
     function generateRows(i) { 
+
 
       // Adds a new basic cell
       function handleNewCell() { 
@@ -193,6 +226,7 @@ class Scenario {
             }
             
           }
+          if (running && activeRow == i) { setActiveRow(activeRow - 1); }
           setRows(tempRows)
         } else {
           setRows(rows)
@@ -245,6 +279,7 @@ class Scenario {
               }
             }
           }
+          if (running && activeRow == i) { setActiveRow(activeRow + 1); }
           setRows(tempRows)
         } else {
           setRows(rows)
@@ -264,22 +299,38 @@ class Scenario {
           }
           index += 1;
         }
+        if (running && activeRow == rows.length-1) { setActiveRow(activeRow - 1); }
         setRows(tempRows)
       }
 
+      // Generate the row style for when the row is active
+      function generateRowStyle() {
+        if (running && activeRow == i) {
+          return {'rowBorder' : "4px solid #d2752d"};
+        } else {
+          return {'rowBorder': "none"};
+        }
+      }
+
+      var rowStyle = generateRowStyle();
+
       return (
-        <div className={styles.row} key={"row"+String(i)} id={"row"+String(i)}>
-          <div className={styles.cell} key={"row"+String(i)+"-row-buttons"} id={"row"+String(i)+"-row-buttons"}>
+        <div className={styles.row} key={"row"+String(i)} id={"row"+String(i)} >
+          <div className={styles.row_btn_container} key={"row"+String(i)+"-row-buttons"} id={"row"+String(i)+"-row-buttons"}>
             <button className={styles.row_btn} key={"row"+String(i)+"-row-up-btn"} id={"row"+String(i)+"-row-up-btn"} onClick={handleMoveRowUp}>^</button>
             <button className={styles.row_btn} key={"row"+String(i)+"-row-delete-btn"} id={"row"+String(i)+"-row-delete-btn"} onClick={handleRemoveRow}>x</button>
             <button className={styles.row_btn} key={"row"+String(i)+"-row-down-btn"} id={"row"+String(i)+"-row-down-btn"} onClick={handleMoveRowDown}>v</button>
           </div>
+          <div className={styles.row_cell_container} style = {{border: rowStyle.rowBorder}}>
           {
             rows[i].map( (cell, j)=>(
               generateCell(i, j)
             ))
           }
-          <button className={styles.row_btn} onClick={handleNewCell} key={"row"+String(i)+"-new-cell-btn"} id={"row"+String(i)+"-new-cell-btn"}>+</button>
+          </div>
+          <div className={styles.new_cell_btn_container} key={"row"+String(i)+"-new-cell-btn-container"} id={"row"+String(i)+"-new-cell-btn-container"}>
+              <button className={styles.new_cell_btn} onClick={handleNewCell} key={"row"+String(i)+"-new-cell-btn"} id={"row"+String(i)+"-new-cell-btn"}>+</button>
+            </div>
         </div>
       )
     }
@@ -290,10 +341,6 @@ class Scenario {
 
       // Change size of the textarea up to a max size based on the window
       function handleChange(event) { 
-         
-        const max_size = Math.round(size.width/ptp);
-        const total_size = getTotalCols(i);
-        const space = max_size - total_size;
 
         var tempRows = []
         for (var i2 = 0; i2 < rows.length; i2++) {
@@ -307,21 +354,22 @@ class Scenario {
             
           }
         }
-
+        
         // Text or Title
         if (event.target.id == "row"+String(i)+"-cell"+String(j)+"-title" ) 
         { tempRows[i][j].title = event.target.value } 
         else 
         { tempRows[i][j].text = event.target.value }
-
-        const new_cols = Math.max(tempRows[i][j].title.length + 2, tempRows[i][j].text.length + 2);
+  
+        var new_cols = Math.max(tempRows[i][j].title.length + 2, tempRows[i][j].text.length + 2);
         const diff = new_cols - rows[i][j].cols
         // Fill available space if too big
+        if (MAX_COLS - new_cols < 0) { new_cols -= diff; }
+      
         event.target.cols = new_cols;
-        if (space - diff < 0) { event.target.cols += space - diff }
-
+        
         tempRows[i][j].cols = event.target.cols;
-
+        
         setRows(tempRows);
         
       }
@@ -415,11 +463,22 @@ class Scenario {
         setRows(tempRows)
       }
 
+      // Generate the cell style for when the row is active
+      function generateCellStyle() {
+        if (running && activeRow == i) {
+          return {'cellFontSize' : "18pt"};
+        } else {
+          return {'cellFontSize' : "16pt"};
+        }
+      }
+
+      var cellStyle = generateCellStyle();
+
       return (
        <div className={styles.cell} key={"row"+String(i)+"-cell"+String(j)} id={"row"+String(i)+"-cell"+String(j)} onFocus={handleCellMouseOver} onMouseLeave={handleCellMouseLeave}>
-        <textarea className={styles.text} key={"row"+String(i)+"-cell"+String(j)+"-title"} id={"row"+String(i)+"-cell"+String(j)+"-title"} onChange={handleChange} type="text"  placeholder="Title" cols={rows[i][j].cols} value={rows[i][j].title}></textarea>
-        <textarea className={styles.text} key={"row"+String(i)+"-cell"+String(j)+"-text"} id={"row"+String(i)+"-cell"+String(j)+"-text"} onChange={handleChange} type="text"  cols={rows[i][j].cols} value={rows[i][j].text}></textarea>
-        <div className={styles.btn_container} key={"row"+String(i)+"-cell"+String(j)+"-btn-container"} id={"row"+String(i)+"-cell"+String(j)+"-btn-container"} style = {{ display : rows[i][j].display, flexDirection: "horizontal", justifyContent: "center" }} onMouseOver={handleCellMouseOver} onMouseOut={handleCellMouseLeave}>
+        <textarea className={styles.title} key={"row"+String(i)+"-cell"+String(j)+"-title"} id={"row"+String(i)+"-cell"+String(j)+"-title"} onChange={handleChange} type="text"  placeholder="Title" cols={rows[i][j].cols} value={rows[i][j].title} style = {{fontSize: cellStyle.cellFontSize}}></textarea>
+        <textarea className={styles.text} key={"row"+String(i)+"-cell"+String(j)+"-text"} id={"row"+String(i)+"-cell"+String(j)+"-text"} onChange={handleChange} type="text"  cols={rows[i][j].cols} value={rows[i][j].text} style = {{fontSize: cellStyle.cellFontSize}} ></textarea>
+        <div className={styles.cell_btn_container} key={"row"+String(i)+"-cell"+String(j)+"-btn-container"} id={"row"+String(i)+"-cell"+String(j)+"-btn-container"} style = {{ display : rows[i][j].display, flexDirection: "horizontal", justifyContent: "center" }} onMouseOver={handleCellMouseOver} onMouseOut={handleCellMouseLeave} onFocus={handleCellMouseOver}>
           <button className={styles.cell_btn} key={"row"+String(i)+"-cell"+String(j)+"-cell-left-btn"} id={"row"+String(i)+"-cell"+String(j)+"-cell-left-btn"} onClick={handleMoveCellLeft}>{"<"}</button>
           <button className={styles.cell_btn} key={"row"+String(i)+"-cell"+String(j)+"-cell-delete-btn"} id={"row"+String(i)+"-cell"+String(j)+"-cell-delete-btn"} onClick={handleRemoveCell}>{"x"}</button>
           <button className={styles.cell_btn} key={"row"+String(i)+"-cell"+String(j)+"-cell-right-btn"} id={"row"+String(i)+"-cell"+String(j)+"-cell-right-btn"} onClick={handleMoveCellRight}>{">"}</button>
@@ -429,8 +488,25 @@ class Scenario {
       )
     }
 
+    function generateRoundText() {
+      return running ? String(round) : "N/A";
+    }
+
+    var roundText = generateRoundText();
+
     return (
       <div className={styles.scenario} id="scenario" key="scenario">
+        <div className={styles.main_menu}>
+          <button className={styles.start_btn} onClick={handleStart} > {generateStartButtonText()} </button>
+          <button className={styles.next_btn} onClick={handleNext}> {"Next Turn"} </button>
+        </div>
+        <select className={styles.select}>
+            <option>Basic</option>
+            <option>D&D 5e</option>
+            <option>Pathfinder 2e</option>
+          </select>
+          <h1 className={styles.round}>{"Round: "+roundText}</h1>
+          
         {
           rows.map( (row, i)=>(
             generateRows(i)
@@ -470,15 +546,13 @@ export default function Home() {
     <>
       <Head>
         <title>Turn Tracker</title>
-        <meta name="description" content="A Web App for trackering TTRPG turn-based scenarios"></meta>
+        <meta name="description" content="A Web App for tracking TTRPG turn-based scenarios"></meta>
         <link rel="icon" href="/favicon.ico"/>
       </Head>
+      <nav className={styles.nav}>
+        <div className={styles.nav_title}>Turn Tracker</div>
+      </nav>
       <main className={styles.main}>
-        <select>
-          <option>Basic</option>
-          <option>D&D 5e</option>
-          <option>Pathfinder 2e</option>
-        </select>
         {
           generate_5e_scenario() // TODO: Change this setting depending on selection or loading from cookie
         }
