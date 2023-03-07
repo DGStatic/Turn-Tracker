@@ -3,9 +3,7 @@ import Image from 'next/image'
 import { Inter, Waiting_for_the_Sunrise } from '@next/font/google'
 import styles from '@/styles/Home.module.css'
 
-import { v4 as uuidv4 } from 'uuid';
 import { useState, useEffect, setState } from 'react';
-import { STRING_LITERAL_DROP_BUNDLE } from 'next/dist/shared/lib/constants';
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -60,7 +58,7 @@ class Scenario {
   generate() { 
     
     // State of rows and cell objects
-    const [rows, setRows] = useState(this.rows) 
+    const [rows, setRows] = useState(this.rows); 
     // State of whether the scenario is being run or not
     const [running, setRunning] = useState(false);
     // State of the currently active row
@@ -69,12 +67,49 @@ class Scenario {
     const [round, setRound] = useState(1);
     // State of window size
     const size = useWindowSize(); 
+    // State of whether the scenario has been edited since the first load
+    const [edited, setEdited] = useState(false);
+    // Time between saving the scenario
+    const AUTOSAVE_COOLDOWN = 5000;
+
+    // Uses a timer to automatically save the scenario
+    useEffect(() => {
+      const interval = setInterval( () => {
+        if (edited) {
+          saveScenario(rows);
+        }
+      }, AUTOSAVE_COOLDOWN);
+      return () => clearInterval(interval);
+    }, [edited, rows]);
+
+    // Save the scenario
+    async function saveScenario(r) {
+      var m = 'POST';
+      // TODO: if we have saved once already, use UPDATE for autosaves
+      const response = await fetch('http://localhost:3000/api/save', {
+        method: m,
+        body: JSON.stringify("saved the scenario"), // TODO: turn the scenario object into JSON
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+      const data = await response.json()
+      console.log(r);
+      
+    }
+
 
     // Pixels to Points conversion (16 pixels to 12 points). TODO: Automatically set ptp.
     const ptp = 21; 
     // Max width of a cell in character widths
     const MAX_COLS = 30;
 
+    function firstEditSave() {
+      if (!edited) {
+        saveScenario(rows);
+        setEdited(true);
+      }
+    }
 
     // Gets total columns of a single row
     function getTotalCols(row) { 
@@ -145,6 +180,9 @@ class Scenario {
       }
 
       tempRows = tempRows.concat([[{'title': 'Title', 'text': '', 'cols': 5, 'display' : 'none'}]])
+
+      firstEditSave();
+
       setRows(tempRows)
     }
 
@@ -166,6 +204,9 @@ class Scenario {
         }
         
         tempRows[i].push({'title': 'Title', 'text': '', 'cols': 5, 'display' : "none"})
+
+        firstEditSave();
+
         setRows(tempRows);
       }
 
@@ -227,6 +268,9 @@ class Scenario {
             
           }
           if (running && activeRow == i) { setActiveRow(activeRow - 1); }
+
+          firstEditSave();
+
           setRows(tempRows)
         } else {
           setRows(rows)
@@ -280,6 +324,9 @@ class Scenario {
             }
           }
           if (running && activeRow == i) { setActiveRow(activeRow + 1); }
+
+          firstEditSave();
+
           setRows(tempRows)
         } else {
           setRows(rows)
@@ -300,6 +347,9 @@ class Scenario {
           index += 1;
         }
         if (running && activeRow == rows.length-1) { setActiveRow(activeRow - 1); }
+
+        firstEditSave();
+
         setRows(tempRows)
       }
 
@@ -369,6 +419,8 @@ class Scenario {
         event.target.cols = new_cols;
         
         tempRows[i][j].cols = event.target.cols;
+
+        firstEditSave();
         
         setRows(tempRows);
         
@@ -422,6 +474,9 @@ class Scenario {
               }
             }
           }
+
+          firstEditSave();
+
           setRows(tempRows)
         } else {
           setRows(rows)
@@ -444,6 +499,9 @@ class Scenario {
               }
             }
           }
+
+          firstEditSave();
+
           setRows(tempRows)
         } else {
           setRows(rows)
@@ -460,6 +518,9 @@ class Scenario {
             tempRows[i2].push({'title' : rows[i2][j2].title, 'text' : rows[i2][j2].text, 'cols' : rows[i2][j2].cols, 'display' : rows[i2][j2].display})
           }
         }
+
+        firstEditSave();
+
         setRows(tempRows)
       }
 
@@ -519,7 +580,6 @@ class Scenario {
   }
 
 }
-    
 
 // Generate empty scenario
 function generate_scenario() {
