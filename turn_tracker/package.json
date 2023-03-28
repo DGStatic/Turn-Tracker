@@ -1,4 +1,8 @@
 {
+  "browser": {
+    "fs": false,
+    "dgram": false
+  },
   "name": "turn_tracker",
   "version": "0.1.0",
   "private": true,
@@ -10,13 +14,24 @@
   },
   "dependencies": {
     "@next/font": "13.1.6",
+    "cookie": "^0.5.0",
+    "cookies-next": "^2.1.1",
+    "dgram": "^1.0.1",
+    "dns": "^0.1.5",
+    "fs": "^0.0.1-security",
+    "mongodb": "^5.1.0",
+    "net": "^1.0.2",
     "next": "13.1.6",
+    "npm": "^9.6.2",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "request-promise": "^4.2.6",
+    "tls": "^0.0.1",
+    "typescript": "5.0.2",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.13",
+    "autoprefixer": "^10.4.14",
     "eslint": "8.32.0",
     "eslint-config-next": "13.1.6",
     "postcss": "^8.4.21",

@@ -122,6 +122,15 @@
   font-family: Tahoma, Verdana, sans-serif;
 }
 
+.new_scenario_btn {
+  width: 10em;
+  font-size: 16pt;
+  background-color: #485D84;
+  color: white;
+  border: 1px solid white;
+  font-family: Tahoma, Verdana, sans-serif;
+}
+
 .round {
   color: white;
   margin-bottom: 1em;

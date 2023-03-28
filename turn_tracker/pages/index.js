@@ -2,8 +2,11 @@ import Head from 'next/head'
 import Image from 'next/image'
 import { Inter, Waiting_for_the_Sunrise } from '@next/font/google'
 import styles from '@/styles/Home.module.css'
+import * as cookie from 'cookie'
 
-import { useState, useEffect, setState } from 'react';
+import { useState, useEffect, setState } from 'react'
+import { v4 as uuidv4 } from 'uuid'
+import { setCookie, getCookie, hasCookie } from 'cookies-next'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -46,12 +49,13 @@ class Scenario {
     this.totCols = 0;
 
     // if using a preset or loaded scenario, load total columns
+    /*
     for (var i = 0; i < this.rows.length; i++) { 
       for (var j = 0; j < this.rows[i].length; j++) {
         this.rows[i][j].cols = this.rows[i][j].title.length + 2;
         this.totCols += this.rows[i][j].cols;
       }
-    }
+    }*/
   }
 
   // Map the scenario and its data onto the page
@@ -69,34 +73,19 @@ class Scenario {
     const size = useWindowSize(); 
     // State of whether the scenario has been edited since the first load
     const [edited, setEdited] = useState(false);
+    // State of whether the scenario loaded
     // Time between saving the scenario
     const AUTOSAVE_COOLDOWN = 5000;
 
     // Uses a timer to automatically save the scenario
     useEffect(() => {
       const interval = setInterval( () => {
-        if (edited) {
+        if (edited && hasCookie('scenarioId')) {
           saveScenario(rows);
         }
       }, AUTOSAVE_COOLDOWN);
       return () => clearInterval(interval);
     }, [edited, rows]);
-
-    // Save the scenario
-    async function saveScenario(r) {
-      var m = 'POST';
-      // TODO: if we have saved once already, use UPDATE for autosaves
-      const response = await fetch('http://localhost:3000/api/save', {
-        method: m,
-        body: JSON.stringify("saved the scenario"), // TODO: turn the scenario object into JSON
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      })
-      const data = await response.json()
-      console.log(r);
-      
-    }
 
 
     // Pixels to Points conversion (16 pixels to 12 points). TODO: Automatically set ptp.
@@ -106,7 +95,11 @@ class Scenario {
 
     function firstEditSave() {
       if (!edited) {
-        saveScenario(rows);
+        if (hasCookie('scenarioID')) {
+          saveScenario(rows)
+        } else {
+          createScenario(rows)
+        }
         setEdited(true);
       }
     }
@@ -136,6 +129,26 @@ class Scenario {
           setActiveRow(activeRow + 1);
         }
       }
+    }
+
+    function handleDeleteScenario() {
+      if (hasCookie('scenarioId')) {
+        deleteScenario()
+      }
+      // TODO: handle the reset of the scenario
+      // differently depending on preset
+      var initCell = {'title' : "Initiative", 'text' : "", 'cols' : 5, 'display' : 'none'}
+      var nameCell = {'title' : "Name", 'text' : "", 'cols' : 5, 'display' : 'none'}
+      var acCell = {'title' : "AC", 'text' : "", 'cols' : 5, 'display' : 'none'}
+      var hpCell = {'title' : "HP", 'text' : "", 'cols' : 5, 'display' : 'none'}
+      var notesCell = {'title' : "Notes", 'text' : "", 'cols' : 5, 'display' : 'none'}
+      var row = [initCell, nameCell, hpCell, acCell, notesCell]
+
+      setEdited(false);
+      setRound(1);
+      setActiveRow(0);
+      setRunning(false);
+      setRows([row])
     }
 
     function generateStartButtonText() {
@@ -561,12 +574,8 @@ class Scenario {
           <button className={styles.start_btn} onClick={handleStart} > {generateStartButtonText()} </button>
           <button className={styles.next_btn} onClick={handleNext}> {"Next Turn"} </button>
         </div>
-        <select className={styles.select}>
-            <option>Basic</option>
-            <option>D&D 5e</option>
-            <option>Pathfinder 2e</option>
-          </select>
-          <h1 className={styles.round}>{"Round: "+roundText}</h1>
+        <button className={styles.new_scenario_btn} onClick={handleDeleteScenario}>New Scenario</button>
+        <h1 className={styles.round}>{"Round: "+roundText}</h1>
           
         {
           rows.map( (row, i)=>(
@@ -581,6 +590,60 @@ class Scenario {
 
 }
 
+async function createScenario(r) {
+
+  var m = 'POST';
+
+  const response = await fetch('http://localhost:3000/api/scenarios/create', {
+    method: m,
+    body: JSON.stringify(r),
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  const data = await response.json()
+  setCookie("scenarioId", data.id)
+}
+// Save the scenario
+async function saveScenario(r) {
+  var m = 'PUT';
+  let scenarioId = getCookie('scenarioId').toString()
+  const response = await fetch('http://localhost:3000/api/scenarios/'+scenarioId, {
+    method: m,
+    body: JSON.stringify(r),
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  const data = await response.json()
+}
+
+async function loadScenario(scenarioId) {
+
+  var m = 'GET'
+  const response = await fetch('http://localhost:3000/api/scenarios/'+scenarioId, {
+    method: m,
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  })
+  return response;
+  
+}
+
+async function deleteScenario() {
+  var m = 'DELETE'
+  let scenarioId = getCookie('scenarioId').toString()
+  const response = await fetch('http://localhost:3000/api/scenarios/'+scenarioId, {
+    method: m,
+    headers: {
+      'Content-Type' : 'application/json',
+    }
+  })
+  const data = await response.json()
+  setCookie('scenarioId', scenarioId, { maxAge : 0 })
+}
+
 // Generate empty scenario
 function generate_scenario() {
   var scn = new Scenario();
@@ -588,8 +651,11 @@ function generate_scenario() {
 }
 
 // Generate a scenario for a general D&D 5e game
-function generate_5e_scenario() {
-
+function generate_5e_scenario(scenario) {
+  if (scenario != null) {
+    let scn = new Scenario(scenario)
+    return scn.generate()
+  }
   var initCell = {'title' : "Initiative", 'text' : "", 'cols' : 5, 'display' : 'none'}
   var nameCell = {'title' : "Name", 'text' : "", 'cols' : 5, 'display' : 'none'}
   var acCell = {'title' : "AC", 'text' : "", 'cols' : 5, 'display' : 'none'}
@@ -597,11 +663,10 @@ function generate_5e_scenario() {
   var notesCell = {'title' : "Notes", 'text' : "", 'cols' : 5, 'display' : 'none'}
   var row = [initCell, nameCell, hpCell, acCell, notesCell]
   var scn = new Scenario([row])
-
   return scn.generate();
 }
 
-export default function Home() {
+export default function Home( { scenario }) {
   return (
     <>
       <Head>
@@ -614,9 +679,23 @@ export default function Home() {
       </nav>
       <main className={styles.main}>
         {
-          generate_5e_scenario() // TODO: Change this setting depending on selection or loading from cookie
+          generate_5e_scenario(scenario) // TODO: Change this setting depending on selection
         }
       </main>
     </>
   )
+}
+
+export async function getServerSideProps(context) {
+  let c = context.req.headers.cookie
+  let id;
+  if (c != undefined) { id = cookie.parse(c) }
+  var scenario = null;
+  if (id != undefined) {
+    const data = await loadScenario(id.scenarioId)
+    const rows = await data.json()
+    scenario = rows.rows
+  }
+  
+  return { props: {scenario} }
 }
