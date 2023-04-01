@@ -178,6 +178,7 @@ class Scenario {
       }
 
       tempRows.push(tempRow);
+      firstEditSave();
       setRows(tempRows)
     }
 
@@ -694,7 +695,11 @@ export async function getServerSideProps(context) {
   if (id != undefined) {
     const data = await loadScenario(id.scenarioId)
     const rows = await data.json()
-    scenario = rows.rows
+    if (rows == null) {
+        scenario = rows
+    } else {
+        scenario = rows.rows
+    }	    
   }
   
   return { props: {scenario} }

@@ -1,8 +1,5 @@
 import { MongoClient } from 'mongodb'
 
-process.env.MONGODB_URI = 'mongodb+srv://dgstatic:ymo2zSj1DUUjl78K@turntrackerdb.bisb555.mongodb.net/?retryWrites=true&w=majority'
-process.env.MONGODB_DB = 'TurnTrackerDB'
-
 if (!process.env.MONGODB_URI) {
   throw new Error('Invalid/Missing environment variable: "MONGODB_URI"')
 }
