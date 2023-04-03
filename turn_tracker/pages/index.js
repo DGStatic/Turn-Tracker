@@ -93,12 +93,12 @@ class Scenario {
     // Max width of a cell in character widths
     const MAX_COLS = 30;
 
-    function firstEditSave() {
+    function firstEditSave(r) {
       if (!edited) {
-        if (hasCookie('scenarioID')) {
-          saveScenario(rows)
+        if (hasCookie('scenarioId')) {
+          saveScenario(r)
         } else {
-          createScenario(rows)
+          createScenario(r)
         }
         setEdited(true);
       }
@@ -178,7 +178,7 @@ class Scenario {
       }
 
       tempRows.push(tempRow);
-      firstEditSave();
+      firstEditSave(tempRows);
       setRows(tempRows)
     }
 
@@ -195,7 +195,7 @@ class Scenario {
 
       tempRows = tempRows.concat([[{'title': 'Title', 'text': '', 'cols': 5, 'display' : 'none'}]])
 
-      firstEditSave();
+      firstEditSave(tempRows);
 
       setRows(tempRows)
     }
@@ -219,7 +219,7 @@ class Scenario {
         
         tempRows[i].push({'title': 'Title', 'text': '', 'cols': 5, 'display' : "none"})
 
-        firstEditSave();
+        firstEditSave(tempRows);
 
         setRows(tempRows);
       }
@@ -283,7 +283,7 @@ class Scenario {
           }
           if (running && activeRow == i) { setActiveRow(activeRow - 1); }
 
-          firstEditSave();
+          firstEditSave(tempRows);
 
           setRows(tempRows)
         } else {
@@ -339,7 +339,7 @@ class Scenario {
           }
           if (running && activeRow == i) { setActiveRow(activeRow + 1); }
 
-          firstEditSave();
+          firstEditSave(tempRows);
 
           setRows(tempRows)
         } else {
@@ -362,7 +362,7 @@ class Scenario {
         }
         if (running && activeRow == rows.length-1) { setActiveRow(activeRow - 1); }
 
-        firstEditSave();
+        firstEditSave(tempRows);
 
         setRows(tempRows)
       }
@@ -434,7 +434,7 @@ class Scenario {
         
         tempRows[i][j].cols = event.target.cols;
 
-        firstEditSave();
+        firstEditSave(tempRows);
         
         setRows(tempRows);
         
@@ -489,7 +489,7 @@ class Scenario {
             }
           }
 
-          firstEditSave();
+          firstEditSave(tempRows);
 
           setRows(tempRows)
         } else {
@@ -514,7 +514,7 @@ class Scenario {
             }
           }
 
-          firstEditSave();
+          firstEditSave(tempRows);
 
           setRows(tempRows)
         } else {
@@ -533,7 +533,7 @@ class Scenario {
           }
         }
 
-        firstEditSave();
+        firstEditSave(tempRows);
 
         setRows(tempRows)
       }
