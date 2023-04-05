@@ -2,7 +2,10 @@ import { MongoClient, ObjectId } from 'mongodb'
 import clientPromise from '../../../lib/mongodb'
 
 export default async (req, res) => {
-
+    res.setHeader('Access-Control-Allow-Origin', 'https://turn-tracker.vercel.app')
+    res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,DELETE,OPTIONS')
+    res.setHeader('Access-Control-Allow-Headers', '*')
+    res.setHeader('Access-Control-Allow-Credentials', 'true')
     if (req.method === 'GET') {
         const client = await clientPromise
 	    let db;
@@ -76,6 +79,8 @@ export default async (req, res) => {
             res.setHeader('Set-Cookie', 'scenarioId=0; Max-Age=0');
             res.status(200).json({message: "scenario deleted successfully!"})
 
+    } else if (req.method === 'OPTIONS') {
+	    res.status(200).send("ok")
     } else { res.status(404).json({message: "invalid request"}) }
 
 }

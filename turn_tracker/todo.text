@@ -1,0 +1,1 @@
+set request url depending on production or not because getServerSideProps->loadScenario is using an invalid url resulting in a 500.

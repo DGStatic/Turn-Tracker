@@ -2,10 +2,15 @@ import { MongoClient, ObjectId } from 'mongodb'
 import clientPromise from '../../../lib/mongodb'
 
 export default async (req, res) => {
+	
+	res.setHeader('Access-Control-Allow-Origin', 'https://turn-tracker.vercel.app')
+	res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS')
+	res.setHeader('Access-Control-Allow-Headers', '*')
+	//res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version')
+	res.setHeader('Access-Control-Allow-Credentials', 'true')
 
     if (req.method === 'POST') {  
-	res.setHeader('Access-Control-Allow-Origin', 'https://turn-tracker.vercel.app');
-        const client = await clientPromise
+       	const client = await clientPromise
         let db;
         let scenarios;
         try {
@@ -13,8 +18,8 @@ export default async (req, res) => {
             scenarios = db.collection("scenarios")
         } catch (e) {
             console.error(e);
-        }
             res.status(500).json({message: "Database error. Please try again later."})
+        }
   
         const scenario = req.body
         var result;
@@ -30,6 +35,8 @@ export default async (req, res) => {
 	}
             res.status(201).json({id : result.insertedId})
 
+    } else if (req.method === 'OPTIONS') { 
+	    res.status(200).send("ok") 
     } else { res.status(404).json({message: "Invalid request."}) }
     
 }
