@@ -113,20 +113,50 @@
   margin-right: 1em;
 }
 
-.select {
+.new_scenario_btn {
   width: 10em;
   font-size: 16pt;
+  text-align: center;
   background-color: #485D84;
   color: white;
   border: 1px solid white;
   font-family: Tahoma, Verdana, sans-serif;
 }
 
-.new_scenario_btn {
-  width: 10em;
-  font-size: 16pt;
+.new_scenario_menu {
+  width: fit-content;
+  display: flex;
+  flex-direction: row;
+  margin-bottom: 1em;
+}
+
+.new_empty_scenario_btn {
+  width: 4em;
+  text-align: center;
   background-color: #485D84;
   color: white;
+  font-size: 16pt;
+  border: 1px solid white;
+  margin-right: 1em;
+  font-family: Tahoma, Verdana, sans-serif;
+}
+
+.new_preset_slct {
+  width: 8em;
+  text-align: left;
+  background-color: #485D84;
+  color: white;
+  font-size: 16pt;
+  border: 1px solid white;
+  font-family: Tahoma, Verdana, sans-serif;
+}
+
+.new_preset_confirm_btn {
+  width: 2em;
+  text-align: center;
+  background-color: #485D84;
+  color: white;
+  font-size: 12pt;
   border: 1px solid white;
   font-family: Tahoma, Verdana, sans-serif;
 }

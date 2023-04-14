@@ -3,12 +3,14 @@ import Image from 'next/image'
 import { Inter, Waiting_for_the_Sunrise } from '@next/font/google'
 import styles from '@/styles/Home.module.css'
 import * as cookie from 'cookie'
+import { getClient } from '../lib/mongodb'
+import { ObjectId } from 'mongodb'
 
 import { useState, useEffect, setState } from 'react'
-import { v4 as uuidv4 } from 'uuid'
 import { setCookie, getCookie, hasCookie } from 'cookies-next'
 
 const inter = Inter({ subsets: ['latin'] })
+
 
 function useWindowSize() {
   // Initialize state with undefined width/height so server and client renders match
@@ -45,17 +47,12 @@ class Scenario {
   
   constructor(rows = [[{'title': 'Title', 'text': '', 'cols': 5, 'display': 'none'}]]) {
     this.rows = rows;
-    
-    this.totCols = 0;
 
-    // if using a preset or loaded scenario, load total columns
-    /*
     for (var i = 0; i < this.rows.length; i++) { 
       for (var j = 0; j < this.rows[i].length; j++) {
-        this.rows[i][j].cols = this.rows[i][j].title.length + 2;
-        this.totCols += this.rows[i][j].cols;
+        this.rows[i][j].cols = this.rows[i][j].title.length + 1;
       }
-    }*/
+    }
   }
 
   // Map the scenario and its data onto the page
@@ -73,7 +70,11 @@ class Scenario {
     const size = useWindowSize(); 
     // State of whether the scenario has been edited since the first load
     const [edited, setEdited] = useState(false);
-    // State of whether the scenario loaded
+    // State of the new scenario menu display
+    const [scenarioMenu, setScenarioMenu] = useState("none")
+    const [scenarioBtn, setScenarioBtn] = useState("block")
+    // State of preset scenario chosen
+    const [preset, setPreset] = useState("D&D")
     // Time between saving the scenario
     const AUTOSAVE_COOLDOWN = 5000;
 
@@ -131,24 +132,60 @@ class Scenario {
       }
     }
 
-    function handleDeleteScenario() {
+    function handleNewScenario() {
+      setScenarioMenu("flex")
+      setScenarioBtn("none")
+    }
+
+    function handleNewEmptyScenario() {
       if (hasCookie('scenarioId')) {
-        deleteScenario()
+        deleteScenario(getCookie('scenarioId').toString())
       }
-      // TODO: handle the reset of the scenario
-      // differently depending on preset
-      var initCell = {'title' : "Initiative", 'text' : "", 'cols' : 5, 'display' : 'none'}
-      var nameCell = {'title' : "Name", 'text' : "", 'cols' : 5, 'display' : 'none'}
-      var acCell = {'title' : "AC", 'text' : "", 'cols' : 5, 'display' : 'none'}
-      var hpCell = {'title' : "HP", 'text' : "", 'cols' : 5, 'display' : 'none'}
-      var notesCell = {'title' : "Notes", 'text' : "", 'cols' : 5, 'display' : 'none'}
-      var row = [initCell, nameCell, hpCell, acCell, notesCell]
+
+      var titleCell = {'title' : "Title", 'text' : "", 'cols' : 5, 'display' : 'none'}
+      var row = [titleCell]
 
       setEdited(false);
       setRound(1);
       setActiveRow(0);
       setRunning(false);
+      setScenarioMenu("none")
+      setScenarioBtn("block")
       setRows([row])
+    }
+
+    function handleNewPresetScenario() {
+      if (hasCookie('scenarioId')) {
+        deleteScenario(getCookie('scenarioId').toString())
+      }
+
+      let row = [];
+      switch (preset) {
+        case "D&D":
+          const initCell = {'title' : "Initiative", 'text' : "", 'cols' : 5, 'display' : 'none'}
+          const nameCell = {'title' : "Name", 'text' : "", 'cols' : 5, 'display' : 'none'}
+          const acCell = {'title' : "AC", 'text' : "", 'cols' : 5, 'display' : 'none'}
+          const hpCell = {'title' : "HP", 'text' : "", 'cols' : 5, 'display' : 'none'}
+          const notesCell = {'title' : "Notes", 'text' : "", 'cols' : 5, 'display' : 'none'}
+          row = [initCell, nameCell, hpCell, acCell, notesCell]
+          break;
+        default:
+          var titleCell = {'title' : "Title", 'text' : "", 'cols' : 5, 'display' : 'none'}
+          row = [titleCell]
+      }
+
+
+      setEdited(false);
+      setRound(1);
+      setActiveRow(0);
+      setRunning(false);
+      setScenarioMenu("none")
+      setScenarioBtn("block")
+      setRows([row])
+    }
+
+    function handlePresetSelect(event) {
+      setPreset(event.target.value)
     }
 
     function generateStartButtonText() {
@@ -575,7 +612,15 @@ class Scenario {
           <button className={styles.start_btn} onClick={handleStart} > {generateStartButtonText()} </button>
           <button className={styles.next_btn} onClick={handleNext}> {"Next Turn"} </button>
         </div>
-        <button className={styles.new_scenario_btn} onClick={handleDeleteScenario}>New Scenario</button>
+        <button className={styles.new_scenario_btn} onClick={handleNewScenario} style = {{ display: scenarioBtn }}>New Scenario</button>
+        <div className={styles.new_scenario_menu} style = {{ display: scenarioMenu }}>
+          <button className={styles.new_empty_scenario_btn} onClick={handleNewEmptyScenario} >Empty</button>
+          <select className={styles.new_preset_slct} onChange={handlePresetSelect}>
+            <option>D&D</option>
+            <option>Pathfinder</option>
+          </select>
+          <button className={styles.new_preset_confirm_btn} onClick={handleNewPresetScenario}>{">"}</button>
+        </div>
         <h1 className={styles.round}>{"Round: "+roundText}</h1>
           
         {
@@ -592,26 +637,27 @@ class Scenario {
 }
 
 async function createScenario(r) {
-
   var m = 'POST';
 
-  const response = await fetch('http://localhost:3000/api/scenarios/create', {
+  const response = await fetch("/api/scenarios", {
     method: m,
     body: JSON.stringify(r),
     headers: {
       'Content-Type': 'application/json',
     }
   })
+
   const data = await response.json()
-  setCookie("scenarioId", data.id)
+  setCookie("scenarioId", data.id, { sameSite: "lax", maxAge: 691200 })
 }
 // Save the scenario
 async function saveScenario(r) {
   var m = 'PUT';
+
   let scenarioId = getCookie('scenarioId').toString()
-  const response = await fetch('http://localhost:3000/api/scenarios/'+scenarioId, {
+  const response = await fetch("/api/scenarios", {
     method: m,
-    body: JSON.stringify(r),
+    body: JSON.stringify({"rows" : r, "id" : scenarioId}),
     headers: {
       'Content-Type': 'application/json',
     }
@@ -619,10 +665,18 @@ async function saveScenario(r) {
   const data = await response.json()
 }
 
-async function loadScenario(scenarioId) {
-
+/*async function loadScenario(scenarioId) {
   var m = 'GET'
-  const response = await fetch('http://localhost:3000/api/scenarios/'+scenarioId, {
+  var end = "api/scenarios/"+scenarioId
+  var url;
+
+  if (process.env.NODE_ENV === 'production') {
+    url = "https://turn-tracker.vercel.app/"+end
+  } else {
+    url = "http://localhost:3000/"+end
+  }
+  
+  const response = await fetch(url, {
     method: m,
     headers: {
       'Content-Type': 'application/json',
@@ -630,13 +684,14 @@ async function loadScenario(scenarioId) {
   })
   return response;
   
-}
+}*/
 
-async function deleteScenario() {
+async function deleteScenario(scenarioId) {
   var m = 'DELETE'
-  let scenarioId = getCookie('scenarioId').toString()
-  const response = await fetch('http://localhost:3000/api/scenarios/'+scenarioId, {
+
+  const response = await fetch("/api/scenarios", {
     method: m,
+    body: JSON.stringify(scenarioId),
     headers: {
       'Content-Type' : 'application/json',
     }
@@ -688,18 +743,40 @@ export default function Home( { scenario }) {
 }
 
 export async function getServerSideProps(context) {
-  let c = context.req.headers.cookie
-  let id;
-  if (c != undefined) { id = cookie.parse(c) }
+  var c;
+  var id;
+  let production = process.env.NODE_ENV === 'production'
+  if (production) {
+    id = context.req.cookies.scenarioId
+  } else {
+    c = context.req.headers.cookie
+    if (c != undefined) { id = cookie.parse(c) }
+  }
   var scenario = null;
   if (id != undefined) {
-    const data = await loadScenario(id.scenarioId)
-    const rows = await data.json()
-    if (rows == null) {
-        scenario = rows
-    } else {
-        scenario = rows.rows
-    }	    
+    const client = await getClient();
+    let db;
+    let scenarios;
+    try {
+        db = client.db("TurnTrackerDB")
+        scenarios = db.collection("scenarios")
+    } catch (e) {
+        console.error(e)
+    }	
+    let result = null;
+    try {
+        let query;
+        if (production) {
+          const query = { "_id" : new ObjectId(id) }
+        } else {
+          const query = { "_id" : new ObjectId(id.scenarioId) }
+        }
+        result = await scenarios.findOne(query)
+        scenario = JSON.parse(JSON.stringify(result.rows))
+    } catch (e) {
+        console.error(e)
+    }
+    
   }
   
   return { props: {scenario} }
