@@ -48,16 +48,15 @@ class Scenario {
   constructor(rows = [[{'title': 'Title', 'text': '', 'cols': 5, 'display': 'none'}]]) {
     this.rows = rows;
 
+  }
+
+  // Map the scenario and its data onto the page
+  generate() { 
     for (var i = 0; i < this.rows.length; i++) { 
       for (var j = 0; j < this.rows[i].length; j++) {
         this.rows[i][j].cols = this.rows[i][j].title.length + 1;
       }
     }
-  }
-
-  // Map the scenario and its data onto the page
-  generate() { 
-    
     // State of rows and cell objects
     const [rows, setRows] = useState(this.rows); 
     // State of whether the scenario is being run or not
@@ -142,7 +141,7 @@ class Scenario {
         deleteScenario(getCookie('scenarioId').toString())
       }
 
-      var titleCell = {'title' : "Title", 'text' : "", 'cols' : 5, 'display' : 'none'}
+      var titleCell = {'title' : "Title", 'text' : "", 'cols' : 6, 'display' : 'none'}
       var row = [titleCell]
 
       setEdited(false);
@@ -162,15 +161,15 @@ class Scenario {
       let row = [];
       switch (preset) {
         case "D&D":
-          const initCell = {'title' : "Initiative", 'text' : "", 'cols' : 5, 'display' : 'none'}
+          const initCell = {'title' : "Initiative", 'text' : "", 'cols' : 11, 'display' : 'none'}
           const nameCell = {'title' : "Name", 'text' : "", 'cols' : 5, 'display' : 'none'}
-          const acCell = {'title' : "AC", 'text' : "", 'cols' : 5, 'display' : 'none'}
-          const hpCell = {'title' : "HP", 'text' : "", 'cols' : 5, 'display' : 'none'}
-          const notesCell = {'title' : "Notes", 'text' : "", 'cols' : 5, 'display' : 'none'}
+          const acCell = {'title' : "AC", 'text' : "", 'cols' : 3, 'display' : 'none'}
+          const hpCell = {'title' : "HP", 'text' : "", 'cols' : 3, 'display' : 'none'}
+          const notesCell = {'title' : "Notes", 'text' : "", 'cols' : 6, 'display' : 'none'}
           row = [initCell, nameCell, hpCell, acCell, notesCell]
           break;
         default:
-          var titleCell = {'title' : "Title", 'text' : "", 'cols' : 5, 'display' : 'none'}
+          var titleCell = {'title' : "Title", 'text' : "", 'cols' : 6, 'display' : 'none'}
           row = [titleCell]
       }
 
@@ -462,7 +461,7 @@ class Scenario {
         else 
         { tempRows[i][j].text = event.target.value }
   
-        var new_cols = Math.max(tempRows[i][j].title.length + 2, tempRows[i][j].text.length + 2);
+        var new_cols = Math.max(tempRows[i][j].title.length + 1, tempRows[i][j].text.length + 1);
         const diff = new_cols - rows[i][j].cols
         // Fill available space if too big
         if (MAX_COLS - new_cols < 0) { new_cols -= diff; }
@@ -650,6 +649,7 @@ async function createScenario(r) {
   const data = await response.json()
   setCookie("scenarioId", data.id, { sameSite: "lax", maxAge: 691200 })
 }
+
 // Save the scenario
 async function saveScenario(r) {
   var m = 'PUT';
@@ -664,27 +664,6 @@ async function saveScenario(r) {
   })
   const data = await response.json()
 }
-
-/*async function loadScenario(scenarioId) {
-  var m = 'GET'
-  var end = "api/scenarios/"+scenarioId
-  var url;
-
-  if (process.env.NODE_ENV === 'production') {
-    url = "https://turn-tracker.vercel.app/"+end
-  } else {
-    url = "http://localhost:3000/"+end
-  }
-  
-  const response = await fetch(url, {
-    method: m,
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  })
-  return response;
-  
-}*/
 
 async function deleteScenario(scenarioId) {
   var m = 'DELETE'
