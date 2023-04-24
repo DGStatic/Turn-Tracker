@@ -257,7 +257,7 @@ class Scenario {
           }
         }
         
-        tempRows[i].push({'title': 'Title', 'text': '', 'cols': 5, 'display' : "none"})
+        tempRows[i].push({'title': 'Title', 'text': '', 'cols': 6, 'display' : "none"})
 
         firstEditSave(tempRows);
 
