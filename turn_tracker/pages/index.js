@@ -45,9 +45,11 @@ function useWindowSize() {
 
 class Scenario {
   
-  constructor(rows = [[{'title': 'Title', 'text': '', 'cols': 5, 'display': 'none'}]]) {
+  constructor(rows = [[{'title': 'Title', 'text': '', 'cols': 6, 'display': 'none'}]], round = 1, turn = 0, running = false) {
     this.rows = rows;
-
+    this.round = round;
+    this.turn = turn;
+    this.running = running;
   }
 
   // Map the scenario and its data onto the page
@@ -60,11 +62,11 @@ class Scenario {
     // State of rows and cell objects
     const [rows, setRows] = useState(this.rows); 
     // State of whether the scenario is being run or not
-    const [running, setRunning] = useState(false);
+    const [running, setRunning] = useState(this.running);
     // State of the currently active row
-    const [activeRow, setActiveRow] = useState(0)
+    const [activeRow, setActiveRow] = useState(this.turn)
     // State of the current round of the turn-based scenario
-    const [round, setRound] = useState(1);
+    const [round, setRound] = useState(this.round);
     // State of window size
     const size = useWindowSize(); 
     // State of whether the scenario has been edited since the first load
@@ -81,7 +83,7 @@ class Scenario {
     useEffect(() => {
       const interval = setInterval( () => {
         if (edited && hasCookie('scenarioId')) {
-          saveScenario(rows);
+          saveScenario(rows, running, activeRow, round);
         }
       }, AUTOSAVE_COOLDOWN);
       return () => clearInterval(interval);
@@ -96,9 +98,9 @@ class Scenario {
     function firstEditSave(r) {
       if (!edited) {
         if (hasCookie('scenarioId')) {
-          saveScenario(r)
+          saveScenario(r, running, activeRow, round)
         } else {
-          createScenario(r)
+          createScenario(r, running, activeRow, round)
         }
         setEdited(true);
       }
@@ -122,12 +124,14 @@ class Scenario {
     function handleNext() {
       if (running) {
         if (activeRow == rows.length-1) {
-          setRound(round + 1);
+          let r = round + 1;
+          setRound(r);
           setActiveRow(0);
         }
         else {
           setActiveRow(activeRow + 1);
         }
+        firstEditSave(rows);
       }
     }
 
@@ -635,12 +639,12 @@ class Scenario {
 
 }
 
-async function createScenario(r) {
+async function createScenario(rows, running, turn, round) {
   var m = 'POST';
 
   const response = await fetch("/api/scenarios", {
     method: m,
-    body: JSON.stringify(r),
+    body: JSON.stringify({"rows" : rows, "running" : running, "turn" : turn, "round" : round}),
     headers: {
       'Content-Type': 'application/json',
     }
@@ -651,13 +655,13 @@ async function createScenario(r) {
 }
 
 // Save the scenario
-async function saveScenario(r) {
+async function saveScenario(rows, running, turn, round) {
   var m = 'PUT';
 
   let scenarioId = getCookie('scenarioId').toString()
   const response = await fetch("/api/scenarios", {
     method: m,
-    body: JSON.stringify({"rows" : r, "id" : scenarioId}),
+    body: JSON.stringify({"rows" : rows, "id" : scenarioId, "running" : running, "turn" : turn, "round" : round}),
     headers: {
       'Content-Type': 'application/json',
     }
@@ -687,15 +691,15 @@ function generate_scenario() {
 
 // Generate a scenario for a general D&D 5e game
 function generate_5e_scenario(scenario) {
-  if (scenario != null) {
-    let scn = new Scenario(scenario)
+  if (scenario != null && scenario.rows != null) {
+    let scn = new Scenario(scenario.rows, scenario.round, scenario.turn, scenario.running)
     return scn.generate()
   }
-  var initCell = {'title' : "Initiative", 'text' : "", 'cols' : 5, 'display' : 'none'}
+  var initCell = {'title' : "Initiative", 'text' : "", 'cols' : 11, 'display' : 'none'}
   var nameCell = {'title' : "Name", 'text' : "", 'cols' : 5, 'display' : 'none'}
-  var acCell = {'title' : "AC", 'text' : "", 'cols' : 5, 'display' : 'none'}
-  var hpCell = {'title' : "HP", 'text' : "", 'cols' : 5, 'display' : 'none'}
-  var notesCell = {'title' : "Notes", 'text' : "", 'cols' : 5, 'display' : 'none'}
+  var acCell = {'title' : "AC", 'text' : "", 'cols' : 3, 'display' : 'none'}
+  var hpCell = {'title' : "HP", 'text' : "", 'cols' : 3, 'display' : 'none'}
+  var notesCell = {'title' : "Notes", 'text' : "", 'cols' : 6, 'display' : 'none'}
   var row = [initCell, nameCell, hpCell, acCell, notesCell]
   var scn = new Scenario([row])
   return scn.generate();
@@ -751,7 +755,7 @@ export async function getServerSideProps(context) {
           const query = { "_id" : new ObjectId(id.scenarioId) }
         }
         result = await scenarios.findOne(query)
-        scenario = JSON.parse(JSON.stringify(result.rows))
+        scenario = JSON.parse(JSON.stringify(result))
     } catch (e) {
         console.error(e)
     }

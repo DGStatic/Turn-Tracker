@@ -21,11 +21,11 @@ export default async (req, res) => {
             return
         }
 
-        const scenario = req.body
+        let scenario;
         var result;
-        let rows;
         try {
-            rows = JSON.parse(JSON.stringify(scenario))
+            scenario = JSON.parse(JSON.stringify(req.body))
+
         } catch (e) {
             console.error(e)
             res.status(400).json({ message: "Invalid request body."})
@@ -34,7 +34,10 @@ export default async (req, res) => {
 
         try {
             const doc = {
-                rows: rows
+                rows: scenario.rows,
+                running: scenario.running,
+                round: scenario.round,
+                turn: scenario.turn
             }
             result = await scenarios.insertOne(doc)
         } catch (e) {
@@ -59,22 +62,24 @@ export default async (req, res) => {
             return
         }
 
-        let body;
+        let scenario;
         try {
-            body = JSON.parse(JSON.stringify(req.body))
+            scenario = JSON.parse(JSON.stringify(req.body))
         } catch (e) {
             console.error(e)
             res.status(400).json({ message: "Invalid request body."})
             return
         }
-	    const rows = body.rows
-        const scenarioId = body.id
+
 
         try {
             const doc = {
-                rows: rows
+                rows: scenario.rows,
+                running: scenario.running,
+                round: scenario.round,
+                turn: scenario.turn
             }
-            const query = { "_id" : new ObjectId(scenarioId) }
+            const query = { "_id" : new ObjectId(scenario.id) }
             const result = await scenarios.replaceOne(query, doc)
         } catch (e) {
             console.error(e)
